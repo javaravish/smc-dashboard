@@ -351,6 +351,25 @@ if($('report-title'))$('report-title').textContent='5. '+marketLabel()+' — His
 <div class="footer">NIFTY SMC Scanner · Local dashboard · Auto trading disabled until explicitly armed</div>
 </div></main>
 <script>
+/* Private API access: token is entered by the user and kept only for this browser tab. */
+(function () {
+  const key = "smc_dashboard_api_token";
+  let token = "";
+  try { token = sessionStorage.getItem(key) || ""; } catch (_) {}
+  if (!token) {
+    token = (window.prompt("Enter your private SMC dashboard API token (from your backend hosting settings):") || "").trim();
+    if (token) { try { sessionStorage.setItem(key, token); } catch (_) {} }
+  }
+  const originalFetch = window.fetch.bind(window);
+  window.fetch = function (resource, options) {
+    options = options || {};
+    const headers = new Headers(options.headers || (resource instanceof Request ? resource.headers : undefined));
+    if (token) headers.set("Authorization", "Bearer " + token);
+    return originalFetch(resource, Object.assign({}, options, { headers }));
+  };
+})();
+</script>
+<script>
 // Timeframe buttons are wired to the real local candle API by the live chart module below.
 document.querySelectorAll('.tf').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.tf').forEach(x=>x.classList.remove('active'));btn.classList.add('active')}));
 document.getElementById('setup').addEventListener('click',()=>{document.getElementById('setup-note').textContent='Checklist: 1) Obtain Angel One confirmation on data-only app registration. 2) Create the SmartAPI app using the approved details. 3) Verify instrument master token. 4) Test historical candles. 5) Implement live WebSocket and candle aggregation. 6) Validate SMC rules with paper trading.'});
